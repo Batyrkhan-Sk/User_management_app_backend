@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const bcrypt = require('bcrypt');
-const authenticateToken = require('./middleware/auth');
+const jwt = require('jsonwebtoken');
+const authenticateToken = require('./middleware/auth.js');
 require('dotenv').config();
 
 const app = express();
