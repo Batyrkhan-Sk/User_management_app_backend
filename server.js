@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const bcrypt = require('bcrypt');
+const authenticateToken = require('./middleware/auth');
 require('dotenv').config();
 
 const app = express();
@@ -11,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', authenticateToken, async (_, res) => {
   try {
     const result = await pool.query('SELECT * FROM users ORDER BY id');
     res.json(result.rows);
@@ -69,21 +70,26 @@ app.post('/api/auth/login', async (req, res) => {
 
     await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
-    res.json({
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      }
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+      expiresIn: '1h'
     });
+
+    res.json({
+    message: 'Login successful',
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    }
+  });
   } catch (err) {
     console.error('Error during login:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/api/auth/logout', async (_, res) => {
+app.post('/api/auth/logout', authenticateToken, async (_, res) => {
   res.json({ message: 'Logout successful' });
 });
 
